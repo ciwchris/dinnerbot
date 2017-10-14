@@ -1,0 +1,11 @@
+{
+  "frameworks": {
+    "net46":{
+      "dependencies": {
+        "Microsoft.Bot.Builder.Azure": "3.2.3",
+        "WindowsAzure.Storage": "8.5.0",
+        "Microsoft.WindowsAzure.ConfigurationManager": "3.2.3"
+      }
+    }
+   }
+}
