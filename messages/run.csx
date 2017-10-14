@@ -26,6 +26,12 @@ using Microsoft.WindowsAzure.Storage.Table; // Namespace for Table storage types
 // -CosmosDbEndpoint set to your cosmos db endpoint
 // -CosmosDbKey set to your cosmos db key
 
+public class BotMessage
+{
+    public string Source { get; set; }
+    public string Message { get; set; }
+}
+
 public class DinnerEntity : TableEntity
 {
     public DinnerEntity(string meal, long lastEatten)
@@ -64,8 +70,11 @@ public static async Task<object> Run(HttpRequestMessage req, TraceWriter log)
             // one of these will have an interface and process it
             switch (activity.GetActivityType())
             {
-                
+                // Message: to the bot?
                 case ActivityTypes.Message:
+                    log.Info(activity.Text);
+                    log.Info(activity.From.Name);
+
                     CloudStorageAccount storageAccount = CloudStorageAccount.Parse(
                     CloudConfigurationManager.GetSetting("AzureWebJobsStorage"));
                     
@@ -73,49 +82,54 @@ public static async Task<object> Run(HttpRequestMessage req, TraceWriter log)
                     CloudTable table = tableClient.GetTableReference("dinners");
                     table.CreateIfNotExists();
                     
+                    /*
+                    // Add an item
                     DinnerEntity dinner = new DinnerEntity("Soup", DateTime.Now.Ticks);
                     TableOperation insertOperation = TableOperation.Insert(dinner);
                     table.Execute(insertOperation);
-                    
-                    
-                    dinner = new DinnerEntity("Salad", DateTime.Now.Ticks);
-                     insertOperation = TableOperation.Insert(dinner);
-                    table.Execute(insertOperation);
-                    
-                    
-                     dinner = new DinnerEntity("Baked Potatoe", DateTime.Now.Ticks);
-                     insertOperation = TableOperation.Insert(dinner);
-                    table.Execute(insertOperation);
-                    
-                    
-                    await Conversation.SendAsync(activity, () => new BasicProactiveEchoDialog());
-                    break;
-                    /*
-                case ActivityTypes.ConversationUpdate:
-                    log.Info("Conversation Update");
-                    var client = new ConnectorClient(new Uri(activity.ServiceUrl));
-                    IConversationUpdateActivity update = activity;
-                    if (update.MembersAdded.Any())
-                    {
-                        var reply = activity.CreateReply();
-                        var newMembers = update.MembersAdded?.Where(t => t.Id != activity.Recipient.Id);
-                        foreach (var newMember in newMembers)
-                        {
-                            reply.Text = "Welcome";
-                            if (!string.IsNullOrEmpty(newMember.Name))
-                            {
-                                reply.Text += $" {newMember.Name}";
-                            }
-                            reply.Text += "!";
-                            await client.Conversations.ReplyToActivityAsync(reply);
-                        }
-                    }
-                    break;
                     */
+
+                    TableQuery<DinnerEntity> query = new TableQuery<DinnerEntity>().Where(
+                            TableQuery.GenerateFilterCondition("PartitionKey",
+                            QueryComparisons.Equal, "dinner"));
+                    
+                    var meal = table.ExecuteQuery(query).OrderByDescending(x => x.LastEatten).Last();
+
+                    var reply = activity.CreateReply();
+                    reply.Text = meal.RowKey;
+
+                    var clientone = new ConnectorClient(new Uri(activity.ServiceUrl));
+                    await clientone.Conversations.ReplyToActivityAsync(reply);
+
+
+
+                    // Update item
+                    TableOperation retrieveOperation = TableOperation.Retrieve<DinnerEntity>("dinner", meal.RowKey);
+                    TableResult retrievedResult = table.Execute(retrieveOperation);
+                    DinnerEntity updateEntity = (DinnerEntity)retrievedResult.Result;
+
+                    if (updateEntity != null)
+                    {
+                        meal.LastEatten = DateTime.Now.Ticks;
+                        TableOperation updateOperation = TableOperation.Replace(meal);
+
+                        table.Execute(updateOperation);
+                    }
+
+                    //await Conversation.SendAsync(activity, () => new BasicProactiveEchoDialog());
+                    break;
                 case ActivityTypes.Event:
                     // handle proactive Message from function
                     log.Info("Trigger start");
+
                     IEventActivity triggerEvent = activity;
+                    //log.Info(triggerEvent.Name);
+                    //log.Info(activity.From.Name);
+
+                    var message = ((JObject) triggerEvent.Value).GetValue("Message").ToString();
+                    log.Info(message);
+
+                    /*
                     var message = JsonConvert.DeserializeObject<Message>(((JObject) triggerEvent.Value).GetValue("Message").ToString());
                     var messageactivity = (Activity)message.RelatesTo.GetPostToBotMessage();
                     
@@ -123,8 +137,10 @@ public static async Task<object> Run(HttpRequestMessage req, TraceWriter log)
                     var triggerReply = messageactivity.CreateReply();
                     triggerReply.Text = $"Here's the deal";
                     await client.Conversations.ReplyToActivityAsync(triggerReply);
+                    */
                     log.Info("Trigger end");
                     break;
+                case ActivityTypes.ConversationUpdate:
                 case ActivityTypes.ContactRelationUpdate:
                 case ActivityTypes.Typing:
                 case ActivityTypes.DeleteUserData:
