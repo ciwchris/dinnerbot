@@ -49,7 +49,7 @@ public class DinnerEntity : TableEntity
 public static async Task<object> Run(HttpRequestMessage req, TraceWriter log)
 {
     log.Info($"Webhook was triggered!");
-
+/*
     // Initialize the azure bot
     using (BotService.Initialize())
     {
@@ -82,12 +82,10 @@ public static async Task<object> Run(HttpRequestMessage req, TraceWriter log)
                     CloudTable table = tableClient.GetTableReference("dinners");
                     table.CreateIfNotExists();
                     
-                    /*
                     // Add an item
-                    DinnerEntity dinner = new DinnerEntity("Soup", DateTime.Now.Ticks);
-                    TableOperation insertOperation = TableOperation.Insert(dinner);
-                    table.Execute(insertOperation);
-                    */
+                    //DinnerEntity dinner = new DinnerEntity("Soup", DateTime.Now.Ticks);
+                    //TableOperation insertOperation = TableOperation.Insert(dinner);
+                    //table.Execute(insertOperation);
 
                     TableQuery<DinnerEntity> query = new TableQuery<DinnerEntity>().Where(
                             TableQuery.GenerateFilterCondition("PartitionKey",
@@ -112,6 +110,7 @@ public static async Task<object> Run(HttpRequestMessage req, TraceWriter log)
                     {
                         meal.LastEatten = DateTime.Now.Ticks;
                         TableOperation updateOperation = TableOperation.Replace(meal);
+                        //TableOperation deleteOperation = TableOperation.Delete(deleteEntity);
 
                         table.Execute(updateOperation);
                     }
@@ -129,15 +128,15 @@ public static async Task<object> Run(HttpRequestMessage req, TraceWriter log)
                     var message = ((JObject) triggerEvent.Value).GetValue("Message").ToString();
                     log.Info(message);
 
-                    /*
-                    var message = JsonConvert.DeserializeObject<Message>(((JObject) triggerEvent.Value).GetValue("Message").ToString());
-                    var messageactivity = (Activity)message.RelatesTo.GetPostToBotMessage();
+
+                    //var message = JsonConvert.DeserializeObject<Message>(((JObject) triggerEvent.Value).GetValue("Message").ToString());
+                    //var messageactivity = (Activity)message.RelatesTo.GetPostToBotMessage();
                     
-                    var client = new ConnectorClient(new Uri(messageactivity.ServiceUrl));
-                    var triggerReply = messageactivity.CreateReply();
-                    triggerReply.Text = $"Here's the deal";
-                    await client.Conversations.ReplyToActivityAsync(triggerReply);
-                    */
+                    //var client = new ConnectorClient(new Uri(messageactivity.ServiceUrl));
+                    //var triggerReply = messageactivity.CreateReply();
+                    //triggerReply.Text = $"Here's the deal";
+                    //await client.Conversations.ReplyToActivityAsync(triggerReply);
+
                     log.Info("Trigger end");
                     break;
                 case ActivityTypes.ConversationUpdate:
@@ -152,4 +151,6 @@ public static async Task<object> Run(HttpRequestMessage req, TraceWriter log)
         }
         return req.CreateResponse(HttpStatusCode.Accepted);
     }    
+*/
+        return req.CreateResponse(HttpStatusCode.Accepted);
 }
